@@ -3,68 +3,82 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-<title>RealCam — Canvas合成 + アニメ</title>
+<title>RealCam — BeReal-like (fixed distortion)</title>
 <style>
-  :root{ --bg:#000; --muted:#999; --accent:#ff6b9f; }
-  html,body{height:100%;margin:0;background:var(--bg);color:#fff;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;overflow:hidden;}
-  .wrap{max-width:430px;margin:0 auto;padding:14px;display:flex;flex-direction:column;align-items:center;height:100dvh;}
-  .header{height:60px;width:100%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:22px}
+  :root{ --bg:#000; --muted:#999; --accent:#ff6b9f; --card:#111; }
+  html,body{height:100%;margin:0;background:var(--bg);color:#fff;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,"Hiragino Kaku Gothic ProN",Meiryo,sans-serif;overflow:hidden}
+  .wrap{max-width:430px;margin:0 auto;padding:14px;display:flex;flex-direction:column;align-items:center;height:100dvh}
+  .header{height:58px;width:100%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:22px}
   .viewport{
-    width:100%;aspect-ratio:9/16;background:#111;border-radius:18px;overflow:hidden;position:relative;
-    box-shadow:0 10px 30px rgba(0,0,0,0.6);touch-action:none;
+    width:100%;aspect-ratio:9/16;background:var(--card);border-radius:18px;overflow:hidden;position:relative;
+    box-shadow:0 14px 40px rgba(0,0,0,0.6);touch-action:none;
   }
   #rearVideo{width:100%;height:100%;object-fit:cover;display:block;background:#000}
   .front-box{
-    position:absolute;left:14px;top:14px;width:110px;height:145px;
-    border-radius:16px;overflow:hidden;border:3px solid rgba(0,0,0,0.5);
-    background:#222;z-index:30;touch-action:none;
+    position:absolute;left:14px;top:14px;width:110px;height:145px;border-radius:16px;overflow:hidden;
+    border:3px solid rgba(0,0,0,0.45);background:#222;z-index:30;touch-action:none;
+    box-shadow:0 8px 22px rgba(0,0,0,0.45);
   }
-  #frontVideo{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);}
+  #frontVideo{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);} /* preview mirrored */
   .time-badge{position:absolute;left:16px;bottom:14px;background:rgba(0,0,0,0.55);padding:6px 10px;border-radius:10px;font-weight:700;z-index:40}
   .flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:80}
-  .flash.anim{animation:flashAnim .4s ease-out}
+  .flash.anim{animation:flashAnim .36s ease-out}
   @keyframes flashAnim{0%{opacity:1}100%{opacity:0}}
   .controls{margin-top:16px;display:flex;gap:12px;align-items:center}
   .circle-btn{width:78px;height:78px;border-radius:50%;border:5px solid #fff;display:flex;align-items:center;justify-content:center;background:transparent;cursor:pointer}
   .circle-inner{width:100%;height:100%;border-radius:50%;background:#fff}
   .small{padding:10px 16px;border-radius:18px;background:#222;border:none;color:#fff;cursor:pointer;font-weight:700}
-  .small:disabled{opacity:0.3}
+  .small:disabled{opacity:0.35;cursor:default}
   .status{margin-top:10px;color:var(--muted);font-size:14px;text-align:center}
+  /* modal result */
   #result{position:fixed;inset:0;background:rgba(0,0,0,0.95);display:none;align-items:center;justify-content:center;flex-direction:column;z-index:200}
   .result-card{width:94%;max-width:420px;background:#000;border-radius:18px;overflow:hidden}
   #finalPreview{width:100%;display:block;background:#111}
   .result-footer{padding:14px;display:flex;gap:8px;align-items:center;justify-content:space-between}
-  .send-btn{background:transparent;border:none;color:#fff;font-weight:900;font-size:28px;cursor:pointer}
+  .send-btn{background:transparent;border:none;color:#fff;font-weight:900;font-size:20px;cursor:pointer}
   .retake,.download{padding:10px 14px;border-radius:14px;font-weight:700;cursor:pointer;color:#fff;border:none}
   .retake{background:#222}
   .download{background:var(--accent)}
-  .send-anim{animation:sendUp .7s ease forwards}
+  .send-anim{animation:sendUp .65s ease forwards}
   @keyframes sendUp{0%{transform:translateY(0);opacity:1}100%{transform:translateY(-20px);opacity:0}}
+  /* subtle UI polish */
+  .hint{font-size:12px;color:var(--muted);margin-top:6px}
 </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="header">BeReal-ish</div>
-    <div class="viewport" id="viewport">
-      <div class="flash" id="flashLayer"></div>
+    <div class="header">BeReal</div>
+
+    <div class="viewport" id="viewport" aria-live="polite">
+      <div class="flash" id="flashLayer" aria-hidden="true"></div>
+
       <video id="rearVideo" autoplay playsinline muted></video>
-      <div class="front-box" id="frontBox"><video id="frontVideo" autoplay playsinline muted></video></div>
+
+      <div class="front-box" id="frontBox" aria-label="self view (drag)">
+        <video id="frontVideo" autoplay playsinline muted></video>
+      </div>
+
       <div class="time-badge" id="timeBadge">--:--</div>
     </div>
+
     <div class="controls">
-      <button class="circle-btn" id="captureBtn"><div class="circle-inner"></div></button>
+      <button class="circle-btn" id="captureBtn" title="Capture">
+        <div class="circle-inner"></div>
+      </button>
       <button class="small" id="saveBtn" disabled>保存</button>
       <button class="small" id="openResultBtn" disabled>SEND画面</button>
     </div>
-    <div class="status" id="status">Tap to capture ✨</div>
+
+    <div class="status" id="status">キャプチャ押してね！📸（Safariは https または localhost推奨）</div>
+    <div class="hint">撮影は「後カメラ → 前カメラ」の順で行うよ。反転・歪みゼロで合成します✨</div>
   </div>
 
-  <div id="result">
-    <div class="result-card" id="resultCard">
-      <img id="finalPreview" alt="final"/>
+  <div id="result" role="dialog" aria-hidden="true">
+    <div class="result-card" id="resultCard" role="document">
+      <img id="finalPreview" alt="final preview"/>
       <div class="result-footer">
         <div style="display:flex;gap:8px">
-          <button class="retake" id="retakeBtn">撮り直し</button>
+          <button class="retake" id="retakeBtn">撮り直す</button>
           <button class="download" id="downloadBtn">保存する</button>
         </div>
         <button class="send-btn" id="sendBtn">SEND ▶</button>
@@ -73,6 +87,7 @@
   </div>
 
 <script>
+/* ======= DOM ======= */
 const rearVideo = document.getElementById('rearVideo');
 const frontVideo = document.getElementById('frontVideo');
 const frontBox = document.getElementById('frontBox');
@@ -81,149 +96,305 @@ const flashLayer = document.getElementById('flashLayer');
 const statusEl = document.getElementById('status');
 const saveBtn = document.getElementById('saveBtn');
 const openResultBtn = document.getElementById('openResultBtn');
+const timeBadge = document.getElementById('timeBadge');
+
 const resultModal = document.getElementById('result');
 const finalPreview = document.getElementById('finalPreview');
+const retakeBtn = document.getElementById('retakeBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+const sendBtn = document.getElementById('sendBtn');
+const resultCard = document.getElementById('resultCard');
 
-let rearCanvas, frontCanvas, composedBlob;
+let rearCanvas = null, frontCanvas = null, composedBlob = null;
+let isCapturing = false;
+let retakeAvailable = 1; // BeReal風：撮り直しは1回だけ（好みで変更可）
 
-// Time
+/* ======= Time badge ======= */
 function updateTime(){
   const n = new Date();
-  document.getElementById('timeBadge').textContent = String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
+  timeBadge.textContent = String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
 }
-updateTime(); setInterval(updateTime, 10000);
+updateTime();
+setInterval(updateTime, 30_000);
 
-// Drag
-let dragging = false, sX, sY, iX, iY;
-frontBox.addEventListener('pointerdown', e => {
-  dragging = true; sX = e.clientX; sY = e.clientY;
-  iX = frontBox.offsetLeft; iY = frontBox.offsetTop;
+/* ======= Drag front box ======= */
+let dragging=false, sX=0, sY=0, iX=0, iY=0;
+frontBox.addEventListener('pointerdown', e=>{
+  dragging=true; sX=e.clientX; sY=e.clientY; iX=frontBox.offsetLeft; iY=frontBox.offsetTop;
   frontBox.setPointerCapture(e.pointerId);
 });
-window.addEventListener('pointermove', e => {
+window.addEventListener('pointermove', e=>{
   if(!dragging) return;
   const vp = document.getElementById('viewport');
+  const maxX = vp.clientWidth - frontBox.clientWidth - 8;
+  const maxY = vp.clientHeight - frontBox.clientHeight - 8;
   let nx = iX + (e.clientX - sX), ny = iY + (e.clientY - sY);
-  nx = Math.max(8, Math.min(vp.clientWidth - 118, nx));
-  ny = Math.max(8, Math.min(vp.clientHeight - 153, ny));
-  frontBox.style.left = nx + 'px'; frontBox.style.top = ny + 'px';
+  nx = Math.max(8, Math.min(maxX, nx));
+  ny = Math.max(8, Math.min(maxY, ny));
+  frontBox.style.left = nx + 'px';
+  frontBox.style.top = ny + 'px';
 });
-window.addEventListener('pointerup', () => dragging = false);
+window.addEventListener('pointerup', ()=>{ dragging=false; });
 
-// Camera Logic: 映像が本当に流れるまで待つ
-async function getActiveStream(videoEl, mode) {
-  const stream = await navigator.mediaDevices.getUserMedia({
-    video: { facingMode: mode, width: { ideal: 1280 }, height: { ideal: 1280 } }
-  });
-  videoEl.srcObject = stream;
-  return new Promise((resolve) => {
-    videoEl.onloadedmetadata = () => {
-      videoEl.play();
-      // 重要：readyStateが4（十分なデータあり）になるまで少し待つ
-      const check = setInterval(() => {
-        if (videoEl.readyState >= 3 && videoEl.videoWidth > 0) {
-          clearInterval(check);
-          resolve(stream);
-        }
-      }, 100);
-    };
+/* ======= Camera helpers ======= */
+async function startStreamFor(videoEl, facing, idealW, idealH){
+  const constraints = { video: { facingMode: facing } };
+  if(idealW) constraints.video.width = { ideal: idealW };
+  if(idealH) constraints.video.height = { ideal: idealH };
+  const s = await navigator.mediaDevices.getUserMedia(constraints);
+  videoEl.srcObject = s;
+  return new Promise((resolve, reject)=>{
+    let t = setInterval(()=>{
+      // readyState >= 3 means "HAVE_FUTURE_DATA" (playable)
+      if(videoEl.readyState >= 3 && videoEl.videoWidth > 0){
+        clearInterval(t);
+        try{ videoEl.play().catch(()=>{}); }catch(e){}
+        resolve(s);
+      }
+    }, 80);
+    // safety timeout
+    setTimeout(()=>{ clearInterval(t); resolve(s); }, 2500);
   });
 }
 
-function snap(videoEl) {
+function snapToCanvas(videoEl){
   const c = document.createElement('canvas');
-  c.width = videoEl.videoWidth;
-  c.height = videoEl.videoHeight;
+  c.width = videoEl.videoWidth || videoEl.clientWidth || 640;
+  c.height = videoEl.videoHeight || videoEl.clientHeight || 480;
   const ctx = c.getContext('2d');
-  if(videoEl === frontVideo) { ctx.translate(c.width, 0); ctx.scale(-1, 1); }
-  ctx.drawImage(videoEl, 0, 0);
+  if(videoEl === frontVideo){
+    // mirror for final: we want the front portrait to appear mirrored (what user expects)
+    ctx.translate(c.width, 0); ctx.scale(-1, 1);
+  }
+  ctx.drawImage(videoEl, 0, 0, c.width, c.height);
   return c;
 }
 
-async function startCapture() {
-  statusEl.textContent = 'Wait... (Rear Camera)';
+/* ======= Distortion-free cover-draw helper ======= */
+/* srcCanvas -> draw into dstCtx at x,y,w,h using cover (center-crop) */
+function drawCoverCanvas(dstCtx, srcCanvas, x, y, w, h){
+  const sw = srcCanvas.width, sh = srcCanvas.height;
+  const sRatio = sw / sh;
+  const tRatio = w / h;
+  let sx, sy, swc, shc;
+  if(sRatio > tRatio){
+    // source is wider: crop left/right
+    shc = sh;
+    swc = Math.round(shc * tRatio);
+    sx = Math.round((sw - swc) / 2);
+    sy = 0;
+  } else {
+    // source is taller: crop top/bottom
+    swc = sw;
+    shc = Math.round(swc / tRatio);
+    sx = 0;
+    sy = Math.round((sh - shc) / 2);
+  }
+  dstCtx.drawImage(srcCanvas, sx, sy, swc, shc, x, y, w, h);
+}
+
+/* helper: rounded rect path */
+function roundRectPath(ctx, x, y, w, h, r){
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+/* ======= Capture sequence (rear -> front) ======= */
+async function captureSequence(){
+  if(isCapturing) return;
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    statusEl.textContent = 'このブラウザはカメラAPI非対応です';
+    return;
+  }
+  isCapturing = true;
+  statusEl.textContent = 'STAY STILL...';
+  saveBtn.disabled = openResultBtn.disabled = true;
+  composedBlob = null;
+
   try {
-    const s1 = await getActiveStream(rearVideo, 'environment');
-    await new Promise(r => setTimeout(r, 700)); // 露出調整待ち
-    flashLayer.classList.add('anim');
-    rearCanvas = snap(rearVideo);
-    s1.getTracks().forEach(t => t.stop());
-    setTimeout(() => flashLayer.classList.remove('anim'), 400);
-
-    statusEl.textContent = 'Smile! (Front Camera)';
-    const s2 = await getActiveStream(frontVideo, 'user');
+    // 1) rear
+    const rearStream = await startStreamFor(rearVideo, 'environment', 1920, 1280);
+    // wait a bit for exposure/autofocus
     await new Promise(r => setTimeout(r, 700));
-    frontCanvas = snap(frontVideo);
-    s2.getTracks().forEach(t => t.stop());
+    // flash anim
+    flashLayer.classList.add('anim');
+    // capture
+    rearCanvas = snapToCanvas(rearVideo);
+    // stop rear
+    rearStream.getTracks().forEach(t => t.stop());
+    rearVideo.srcObject = null;
+    setTimeout(()=>flashLayer.classList.remove('anim'), 380);
 
-    await compose();
-    statusEl.textContent = 'Done! ✨';
+    // 2) front reaction
+    statusEl.textContent = 'NOW YOUR REACTION!';
+    frontBox.classList.add('active');
+    await new Promise(r => setTimeout(r, 900));
+
+    const frontStream = await startStreamFor(frontVideo, 'user', 1280, 960);
+    await new Promise(r => setTimeout(r, 500));
+    frontCanvas = snapToCanvas(frontVideo);
+    frontStream.getTracks().forEach(t => t.stop());
+    frontVideo.srcObject = null;
+    frontBox.classList.remove('active');
+
+    // 3) compose
+    statusEl.textContent = 'COMPOSING...';
+    await composeFinal();
+    statusEl.textContent = 'Ready — 保存 or SENDしてね ✨';
     saveBtn.disabled = openResultBtn.disabled = false;
-  } catch (e) {
-    statusEl.textContent = 'Error: Check Permissions';
-    console.error(e);
+  } catch (err) {
+    console.error(err);
+    statusEl.textContent = 'カメラエラー：設定と https を確認してね';
+    alert('カメラにアクセスできませんでした。Safariのサイト設定でカメラ許可を確認してね🫶');
+  } finally {
+    isCapturing = false;
   }
 }
 
-async function compose() {
-  const W = 1080, H = 1440;
-  const canvas = document.createElement('canvas');
-  canvas.width = W; canvas.height = H;
-  const ctx = canvas.getContext('2d');
+/* ======= Compose result with distortion fix and accurate small-window mapping ======= */
+async function composeFinal(){
+  const OUT_W = 1080;
+  const OUT_H = 1440;
+  const out = document.createElement('canvas');
+  out.width = OUT_W; out.height = OUT_H;
+  const ctx = out.getContext('2d');
 
-  ctx.fillStyle = '#050505'; ctx.fillRect(0,0,W,H);
-  
-  // Rear Draw
-  const rRatio = Math.min(rearCanvas.width/W, rearCanvas.height/(H*0.8));
-  const rw = W * rRatio, rh = (H*0.8) * rRatio;
-  ctx.drawImage(rearCanvas, (rearCanvas.width-rw)/2, (rearCanvas.height-rh)/2, rw, rh, 0, 0, W, H*0.8);
+  // background
+  ctx.fillStyle = '#07070a';
+  ctx.fillRect(0, 0, OUT_W, OUT_H);
 
-  // Front Draw (Position from UI)
-  const ratio = W / document.getElementById('viewport').clientWidth;
-  const fw = 110 * ratio, fh = 145 * ratio;
-  const fx = (parseInt(frontBox.style.left) || 14) * ratio;
-  const fy = (parseInt(frontBox.style.top) || 14) * ratio;
+  // rear: drawCover into top portion (use 72% height)
+  const rearH = Math.round(OUT_H * 0.72);
+  drawCoverCanvas(ctx, rearCanvas, 0, 0, OUT_W, rearH);
 
+  // divider line
+  ctx.fillStyle = 'rgba(255,255,255,0.04)';
+  ctx.fillRect(0, rearH - 4, OUT_W, 4);
+
+  // small front window mapping:
+  // map frontBox (in viewport coord) -> out canvas coord
+  const vp = document.getElementById('viewport');
+  const vpRect = vp.getBoundingClientRect();
+  const fx_ui = parseInt(frontBox.style.left || 14, 10);
+  const fy_ui = parseInt(frontBox.style.top || 14, 10);
+  const fw_ui = frontBox.clientWidth;
+  const fh_ui = frontBox.clientHeight;
+
+  // horizontal scale from viewport -> OUT_W
+  const scaleX = OUT_W / vpRect.width;
+  // vertical scale: viewport full height maps to rearH (we place small front only within the rear area)
+  const scaleY = rearH / vpRect.height;
+
+  const tx = Math.round(fx_ui * scaleX);
+  const ty = Math.round(fy_ui * scaleY); // top relative to rear area
+  const tw = Math.round(fw_ui * scaleX);
+  const th = Math.round(fh_ui * scaleY);
+
+  // draw rounded rect shadow background
   ctx.save();
-  ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 40;
-  // Rounded Rect Clip
-  ctx.beginPath();
-  ctx.roundRect ? ctx.roundRect(fx, fy, fw, fh, 25) : ctx.rect(fx, fy, fw, fh);
-  ctx.fill(); ctx.clip();
-  ctx.drawImage(frontCanvas, fx, fy, fw, fh);
+  ctx.shadowColor = 'rgba(0,0,0,0.55)';
+  ctx.shadowBlur = 20;
+  // rounded rect background
+  roundRectPath(ctx, tx - 4, ty - 4, tw + 8, th + 8, 24);
+  ctx.fillStyle = '#000';
+  ctx.fill();
+  // clip to rounded rect
+  roundRectPath(ctx, tx, ty, tw, th, 20);
+  ctx.clip();
+
+  // draw front into clipped area using cover
+  drawCoverCanvas(ctx, frontCanvas, tx, ty, tw, th);
   ctx.restore();
 
-  // Time
-  ctx.fillStyle = '#fff'; ctx.font = 'bold 40px sans-serif';
-  ctx.fillText(document.getElementById('timeBadge').textContent, 50, H * 0.75);
+  // timestamp (left-bottom)
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mm = String(now.getMinutes()).padStart(2, '0');
+  const label = `${hh}:${mm}`;
+  ctx.fillStyle = 'rgba(0,0,0,0.52)';
+  ctx.fillRect(36, OUT_H - 120, 170, 56);
+  ctx.fillStyle = '#fff';
+  ctx.font = '34px system-ui, -apple-system, "Segoe UI"';
+  ctx.fillText(label, 52, OUT_H - 82);
 
-  finalPreview.src = canvas.toDataURL('image/jpeg', 0.9);
-  canvas.toBlob(b => { composedBlob = b; }, 'image/jpeg', 0.9);
+  // tiny watermark
+  ctx.fillStyle = 'rgba(255,255,255,0.06)';
+  ctx.font = '18px sans-serif';
+  ctx.fillText('BeReal-ish', OUT_W - 140, OUT_H - 40);
+
+  // finalize blob & preview
+  finalPreview.src = out.toDataURL('image/jpeg', 0.92);
+  out.toBlob(b => { composedBlob = b; }, 'image/jpeg', 0.92);
 }
 
-// Download Fix: Blobを使う
-function download() {
-  if(!composedBlob) return;
+/* ======= download/send/retake UI ======= */
+function downloadBlob(){
+  if(!composedBlob){ alert('まだ合成画像がありません'); return; }
   const url = URL.createObjectURL(composedBlob);
   const a = document.createElement('a');
-  a.href = url; a.download = `BeReal_${Date.now()}.jpg`;
-  document.body.appendChild(a); a.click();
-  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+  a.href = url;
+  a.download = `RealCam_${Date.now()}.jpg`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 2000);
 }
 
-captureBtn.onclick = startCapture;
-saveBtn.onclick = download;
-document.getElementById('downloadBtn').onclick = download;
-openResultBtn.onclick = () => resultModal.style.display = 'flex';
-document.getElementById('retakeBtn').onclick = () => { resultModal.style.display = 'none'; };
-document.getElementById('sendBtn').onclick = () => {
-  document.getElementById('resultCard').classList.add('send-anim');
-  setTimeout(() => {
+/* ======= events ======= */
+captureBtn.addEventListener('click', captureSequence);
+saveBtn.addEventListener('click', ()=>{
+  if(!composedBlob) return alert('まだ合成画像がありません');
+  downloadBlob();
+});
+openResultBtn.addEventListener('click', ()=>{
+  if(!composedBlob) return;
+  resultModal.style.display = 'flex';
+  resultModal.setAttribute('aria-hidden','false');
+});
+
+retakeBtn.addEventListener('click', ()=>{
+  if(retakeAvailable <= 0){ alert('撮り直しはもう使えないよ〜（BeReal風）'); return; }
+  retakeAvailable--;
+  resultModal.style.display = 'none';
+  finalPreview.src = '';
+  composedBlob = null;
+  rearCanvas = frontCanvas = null;
+  saveBtn.disabled = openResultBtn.disabled = true;
+  statusEl.textContent = '撮り直しOK！もう一度Captureを押してね';
+});
+
+downloadBtn.addEventListener('click', downloadBlob);
+
+sendBtn.addEventListener('click', ()=>{
+  // send animation
+  resultCard.classList.add('send-anim');
+  setTimeout(()=>{
     resultModal.style.display = 'none';
-    document.getElementById('resultCard').classList.remove('send-anim');
-    alert('送信完了（したフリ）！');
+    resultCard.classList.remove('send-anim');
+    alert('送信したフリをしたよ〜（実際はローカル保存）💖');
+    // reset after send
+    finalPreview.src = '';
+    composedBlob = null; rearCanvas = frontCanvas = null;
+    saveBtn.disabled = openResultBtn.disabled = true;
+    statusEl.textContent = '送信したフリ 完了！';
   }, 700);
-};
+});
+
+/* ======= init checks ======= */
+if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+  statusEl.textContent = 'このブラウザはカメラAPIに非対応です。Safari最新版を使ってね';
+} else {
+  statusEl.textContent = '準備OK — Capture を押して撮影してね！';
+  // enable openResultBtn only after we have composed image
+}
+
+/* console tip */
+console.log('Tip: Safariでカメラ効かない場合は https / ローカルサーバー / 設定→Safari→カメラ を確認してね');
 </script>
 </body>
 </html>
