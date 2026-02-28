@@ -2,87 +2,72 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
-<title>RealCam — Canvas合成 + アニメ</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<title>RealCam — Optimized</title>
 <style>
-  :root{
-    --bg:#000; --muted:#999; --accent:#ff6b9f;
-  }
-  html,body{height:100%;margin:0;background:var(--bg);color:#fff;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,"Hiragino Kaku Gothic ProN",Meiryo,sans-serif}
-  .wrap{max-width:430px;margin:0 auto;padding:14px;display:flex;flex-direction:column;align-items:center}
-  .header{height:60px;width:100%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:22px}
+  :root{ --bg:#000; --muted:#999; --accent:#ff6b9f; }
+  html,body{height:100%;margin:0;background:var(--bg);color:#fff;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;overflow:hidden;}
+  .wrap{max-width:430px;margin:0 auto;padding:14px;display:flex;flex-direction:column;align-items:center;height:100dvh;}
+  .header{height:50px;width:100%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:22px;letter-spacing:1px}
   .viewport{
     width:100%;aspect-ratio:9/16;background:#111;border-radius:18px;overflow:hidden;position:relative;
-    box-shadow:0 10px 30px rgba(0,0,0,0.6);
+    box-shadow:0 10px 30px rgba(0,0,0,0.6);touch-action:none;
   }
-  /* rear video full */
-  #rearVideo{width:100%;height:100%;object-fit:cover;display:block}
-  /* small front preview draggable */
-  .front-box{position:absolute;left:14px;top:14px;width:110px;height:150px;border-radius:16px;overflow:hidden;border:3px solid rgba(0,0,0,0.5);background:#222;z-index:30;touch-action:none;display:flex;align-items:center;justify-content:center}
-  #frontVideo{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);} /* mirror */
-  /* overlay time */
-  .time-badge{position:absolute;left:16px;bottom:14px;background:rgba(0,0,0,0.55);padding:6px 10px;border-radius:10px;font-weight:700;z-index:40}
-  /* flash */
+  #rearVideo{width:100%;height:100%;object-fit:cover;display:block;background:#000}
+  .front-box{
+    position:absolute;left:14px;top:14px;width:110px;height:145px;
+    border-radius:12px;overflow:hidden;border:2px solid rgba(255,255,255,0.3);
+    background:#222;z-index:30;touch-action:none;
+  }
+  #frontVideo{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);}
+  .time-badge{position:absolute;left:16px;bottom:14px;background:rgba(0,0,0,0.5);padding:4px 10px;border-radius:8px;font-weight:700;z-index:40;font-size:14px}
   .flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:80}
-  .flash.anim{animation:flashAnim .45s ease-out}
+  .flash.anim{animation:flashAnim .4s ease-out}
   @keyframes flashAnim{0%{opacity:1}100%{opacity:0}}
-  /* controls */
-  .controls{margin-top:16px;display:flex;gap:12px;align-items:center}
-  .circle-btn{width:78px;height:78px;border-radius:50%;border:5px solid #fff;display:flex;align-items:center;justify-content:center;background:transparent;cursor:pointer}
-  .circle-inner{width:100%;height:100%;border-radius:50%;background:#fff}
-  .small{padding:10px 16px;border-radius:18px;background:#222;border:none;color:#fff;cursor:pointer;font-weight:700}
-  .status{margin-top:10px;color:var(--muted);font-size:14px}
-  /* result modal */
-  #result{position:fixed;inset:0;background:rgba(0,0,0,0.95);display:none;align-items:center;justify-content:center;flex-direction:column;z-index:200}
-  .result-card{width:94%;max-width:420px;background:#000;border-radius:18px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,0.7)}
-  #finalPreview{width:100%;display:block}
-  .result-footer{padding:14px;display:flex;gap:8px;align-items:center;justify-content:space-between}
-  .send-btn{background:transparent;border:none;color:#fff;font-weight:900;font-size:28px;cursor:pointer}
-  .retake{background:#222;padding:10px 14px;border-radius:14px;font-weight:700;cursor:pointer;color:#fff}
-  .download{background:var(--accent);padding:10px 14px;border-radius:14px;font-weight:700;cursor:pointer;color:#fff}
-  /* SENDアニメ */
-  .send-anim{animation:sendUp .7s ease forwards}
-  @keyframes sendUp{0%{transform:translateY(0);opacity:1}100%{transform:translateY(-20px);opacity:0.0}}
-  /* rounded rect helper for canvas (polyfill) */
+  .controls{margin-top:20px;display:flex;gap:20px;align-items:center}
+  .circle-btn{width:72px;height:72px;border-radius:50%;border:4px solid #fff;display:flex;align-items:center;justify-content:center;background:transparent;padding:4px}
+  .circle-inner{width:100%;height:100%;border-radius:50%;background:#fff;transition:transform 0.1s}
+  .circle-btn:active .circle-inner{transform:scale(0.9)}
+  .small{padding:10px 18px;border-radius:20px;background:#222;border:none;color:#fff;cursor:pointer;font-weight:700;font-size:14px}
+  .small:disabled{opacity:0.4;cursor:default}
+  .status{margin-top:12px;color:var(--muted);font-size:13px;height:1.2em}
+  #result{position:fixed;inset:0;background:rgba(0,0,0,0.98);display:none;align-items:center;justify-content:center;flex-direction:column;z-index:200;padding:20px}
+  .result-card{width:100%;max-width:380px;background:#000;border-radius:20px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,0.8)}
+  #finalPreview{width:100%;display:block;aspect-ratio:3/4;object-fit:contain;background:#000}
+  .result-footer{padding:16px;display:flex;gap:10px;align-items:center;justify-content:space-between}
+  .send-btn{background:transparent;border:none;color:#fff;font-weight:900;font-size:24px;cursor:pointer}
+  .retake{background:#333;padding:10px 16px;border-radius:12px;font-weight:700;cursor:pointer;color:#fff;border:none}
+  .download{background:var(--accent);padding:10px 16px;border-radius:12px;font-weight:700;cursor:pointer;color:#fff;border:none}
+  .send-anim{animation:sendUp .6s ease-in forwards}
+  @keyframes sendUp{0%{transform:translateY(0);opacity:1}100%{transform:translateY(-100px);opacity:0}}
 </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="header">BeReal-ish</div>
-
+    <div class="header">RealCam</div>
     <div class="viewport" id="viewport">
       <div class="flash" id="flashLayer"></div>
-
-      <!-- rear video placeholder -->
       <video id="rearVideo" autoplay playsinline muted></video>
-
-      <!-- draggable front box -->
-      <div class="front-box" id="frontBox" title="Drag me">
+      <div class="front-box" id="frontBox">
         <video id="frontVideo" autoplay playsinline muted></video>
       </div>
-
       <div class="time-badge" id="timeBadge">--:--</div>
     </div>
-
     <div class="controls">
-      <button class="circle-btn" id="captureBtn" title="Capture">
-        <div class="circle-inner"></div>
-      </button>
       <button class="small" id="saveBtn" disabled>保存</button>
-      <button class="small" id="openResultBtn" disabled>SEND画面</button>
+      <button class="circle-btn" id="captureBtn"><div class="circle-inner"></div></button>
+      <button class="small" id="openResultBtn" disabled>SEND</button>
     </div>
-
-    <div class="status" id="status">Tap to capture. Safariはhttps推奨。</div>
+    <div class="status" id="status">Ready</div>
   </div>
 
-  <!-- result modal -->
-  <div id="result" role="dialog" aria-hidden="true">
+  <div id="result" role="dialog">
     <div class="result-card" id="resultCard">
-      <img id="finalPreview" alt="final preview"/>
+      <img id="finalPreview" alt="preview"/>
       <div class="result-footer">
         <div style="display:flex;gap:8px">
-          <button class="retake" id="retakeBtn">Retake</button>
-          <button class="download" id="downloadBtn">Download</button>
+          <button class="retake" id="retakeBtn">戻る</button>
+          <button class="download" id="downloadBtn">保存</button>
         </div>
         <button class="send-btn" id="sendBtn">SEND ▶</button>
       </div>
@@ -90,7 +75,6 @@
   </div>
 
 <script>
-/* --------------- ヘルパー --------------- */
 const rearVideo = document.getElementById('rearVideo');
 const frontVideo = document.getElementById('frontVideo');
 const frontBox = document.getElementById('frontBox');
@@ -100,7 +84,6 @@ const statusEl = document.getElementById('status');
 const timeBadge = document.getElementById('timeBadge');
 const saveBtn = document.getElementById('saveBtn');
 const openResultBtn = document.getElementById('openResultBtn');
-
 const resultModal = document.getElementById('result');
 const finalPreview = document.getElementById('finalPreview');
 const retakeBtn = document.getElementById('retakeBtn');
@@ -108,264 +91,179 @@ const downloadBtn = document.getElementById('downloadBtn');
 const sendBtn = document.getElementById('sendBtn');
 const resultCard = document.getElementById('resultCard');
 
-let rearCanvasEl = null; // canvas objects from capture
-let frontCanvasEl = null;
-let composedDataUrl = null;
+let rearCanvasEl, frontCanvasEl, composedDataUrl;
 let isCapturing = false;
 
+// Time update
 function updateTime(){
   const n = new Date();
   timeBadge.textContent = String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
 }
-updateTime(); setInterval(updateTime, 30_000);
+updateTime(); setInterval(updateTime, 10000);
 
-/* Safari/HTTPS 注意メッセージ */
-function showError(msg){
-  statusEl.textContent = msg;
-}
-
-/* --------------- ドラッグ for frontBox --------------- */
-let dragging = false, sX=0, sY=0, initX=0, initY=0;
-frontBox.addEventListener('pointerdown',(e)=>{
-  dragging=true; sX=e.clientX; sY=e.clientY; initX=frontBox.offsetLeft; initY=frontBox.offsetTop;
+// Dragging
+let dragging = false, sX, sY, initX, initY;
+frontBox.addEventListener('pointerdown', e => {
+  dragging = true; sX = e.clientX; sY = e.clientY;
+  initX = frontBox.offsetLeft; initY = frontBox.offsetTop;
   frontBox.setPointerCapture(e.pointerId);
 });
-window.addEventListener('pointermove',(e)=>{
-  if(!dragging) return;
-  const dx = e.clientX - sX; const dy = e.clientY - sY;
+window.addEventListener('pointermove', e => {
+  if (!dragging) return;
   const vp = document.getElementById('viewport');
-  const maxX = vp.clientWidth - frontBox.clientWidth - 12;
-  const maxY = vp.clientHeight - frontBox.clientHeight - 12;
-  let nx = Math.max(8, Math.min(maxX, initX + dx));
-  let ny = Math.max(8, Math.min(maxY, initY + dy));
+  let nx = initX + (e.clientX - sX);
+  let ny = initY + (e.clientY - sY);
+  nx = Math.max(8, Math.min(vp.clientWidth - frontBox.clientWidth - 8, nx));
+  ny = Math.max(8, Math.min(vp.clientHeight - frontBox.clientHeight - 8, ny));
   frontBox.style.left = nx + 'px'; frontBox.style.top = ny + 'px';
 });
-window.addEventListener('pointerup',()=>{ dragging=false; });
+window.addEventListener('pointerup', () => dragging = false);
 
-/* --------------- カメラ順次起動＆撮影（iOS向け） --------------- */
-async function startStreamFor(videoEl, facingMode, idealWidth, idealHeight){
-  const constraints = { video: { facingMode } };
-  if(idealWidth) constraints.video.width = { ideal: idealWidth };
-  if(idealHeight) constraints.video.height = { ideal: idealHeight };
-  return await navigator.mediaDevices.getUserMedia(constraints);
+async function startStream(videoEl, mode) {
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: mode, width: { ideal: 1280 }, height: { ideal: 1280 } },
+    audio: false
+  });
+  videoEl.srcObject = stream;
+  return new Promise(resolve => {
+    videoEl.onloadedmetadata = () => {
+      videoEl.play();
+      resolve(stream);
+    };
+  });
 }
 
-function captureVideoToCanvas(videoEl){
+function captureCanvas(videoEl) {
   const c = document.createElement('canvas');
-  const w = videoEl.videoWidth || videoEl.clientWidth || 640;
-  const h = videoEl.videoHeight || videoEl.clientHeight || 480;
-  c.width = w; c.height = h;
+  c.width = videoEl.videoWidth;
+  c.height = videoEl.videoHeight;
   const ctx = c.getContext('2d');
-  // front is mirrored in preview; for final we want mirrored result (so keep mirror)
-  if(videoEl === frontVideo){
-    ctx.translate(w,0); ctx.scale(-1,1);
+  if (videoEl === frontVideo) {
+    ctx.translate(c.width, 0); ctx.scale(-1, 1);
   }
-  ctx.drawImage(videoEl,0,0,w,h);
+  ctx.drawImage(videoEl, 0, 0);
   return c;
 }
 
-async function captureSequence(){
-  if(isCapturing) return;
+async function captureSequence() {
+  if (isCapturing) return;
   isCapturing = true;
-  composedDataUrl = null;
-  saveBtn.disabled = true; openResultBtn.disabled = true;
-  statusEl.textContent = 'STAY STILL...';
-
-  try{
-    // rear start
-    const rearStream = await startStreamFor(rearVideo,'environment',1920,1280);
-    rearVideo.srcObject = rearStream;
-    await rearVideo.play().catch(()=>{});
-    // small wait to stabilize exposure
-    await new Promise(r=>setTimeout(r,600));
-
-    // flash anim
+  statusEl.textContent = 'Wait...';
+  
+  try {
+    // 1. Rear Capture
+    const rearStream = await startStream(rearVideo, 'environment');
+    await new Promise(r => setTimeout(r, 800)); // AF/AE stability
     flashLayer.classList.add('anim');
+    setTimeout(() => flashLayer.classList.remove('anim'), 400);
+    rearCanvasEl = captureCanvas(rearVideo);
+    rearStream.getTracks().forEach(t => t.stop());
 
-    // capture rear
-    rearCanvasEl = captureVideoToCanvas(rearVideo);
+    // 2. Front Capture
+    statusEl.textContent = 'Smile!';
+    const frontStream = await startStream(frontVideo, 'user');
+    await new Promise(r => setTimeout(r, 600));
+    frontCanvasEl = captureCanvas(frontVideo);
+    frontStream.getTracks().forEach(t => t.stop());
 
-    // stop rear
-    rearStream.getTracks().forEach(t=>t.stop());
-    rearVideo.srcObject = null;
-
-    // UI hint
-    statusEl.textContent = 'NOW YOUR REACTION!';
-    frontBox.classList.add('active');
-    // "リアクション時間"を演出
-    await new Promise(r=>setTimeout(r,900));
-
-    // front start
-    const frontStream = await startStreamFor(frontVideo,'user',1280,960);
-    frontVideo.srcObject = frontStream;
-    await frontVideo.play().catch(()=>{});
-    await new Promise(r=>setTimeout(r,400));
-
-    frontCanvasEl = captureVideoToCanvas(frontVideo);
-
-    // stop front
-    frontStream.getTracks().forEach(t=>t.stop());
-    frontVideo.srcObject = null;
-    frontBox.classList.remove('active');
-
-    // 合成
-    statusEl.textContent = 'COMPOSING...';
-    await composeFinalImage();
-    statusEl.textContent = 'Ready — 保存 or SENDしてね ✨';
-    saveBtn.disabled = false; openResultBtn.disabled = false;
-  }catch(err){
+    // 3. Compose
+    statusEl.textContent = 'Processing...';
+    await compose();
+    
+    saveBtn.disabled = false;
+    openResultBtn.disabled = false;
+    statusEl.textContent = 'Captured ✨';
+  } catch (err) {
     console.error(err);
-    showError('カメラエラー：設定を確認してね（Safariはhttpsが必要かも）📱');
+    statusEl.textContent = 'Camera Error';
   } finally {
     isCapturing = false;
   }
 }
 
-/* --------------- Canvas合成（角丸・影・タイムスタンプ） --------------- */
-async function composeFinalImage(){
-  // target size
-  const OUT_W = 1080;
-  const OUT_H = 1440; // 3:4
-  const out = document.createElement('canvas');
-  out.width = OUT_W; out.height = OUT_H;
-  const ctx = out.getContext('2d');
+async function compose() {
+  const W = 1080, H = 1440;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
 
-  // 背景ダークで塗りつぶし
-  ctx.fillStyle = '#07070a'; ctx.fillRect(0,0,OUT_W,OUT_H);
-
-  // drawCover - rear as background (center-crop)
-  await drawCoverCanvas(ctx, rearCanvasEl, 0, 0, OUT_W, Math.round(OUT_H * 0.72));
-
-  // divide line
-  ctx.fillStyle = 'rgba(255,255,255,0.04)';
-  ctx.fillRect(0, Math.round(OUT_H * 0.72) - 4, OUT_W, 4);
-
-  // front small window size and pos - derive from frontBox css pos
-  const vp = document.getElementById('viewport');
-  // compute ratio between viewport and OUT dimensions for placement (approx)
-  const vpRect = vp.getBoundingClientRect();
-  const fx = parseInt(frontBox.style.left || 14,10);
-  const fy = parseInt(frontBox.style.top || 14,10);
-  const fw = frontBox.clientWidth;
-  const fh = frontBox.clientHeight;
-  // map these coords to OUT canvas: scale by ratio width
-  const scale = OUT_W / vpRect.width;
-  const tx = Math.round(fx * scale);
-  const ty = Math.round(fy * scale * 0.72); // tiny vertical mapping bias
-  const tw = Math.round(fw * scale);
-  const th = Math.round(fh * scale);
-
-  // Draw small rounded rect with shadow
-  ctx.save();
-  ctx.shadowColor = 'rgba(0,0,0,0.55)';
-  ctx.shadowBlur = 22;
-  roundedRect(ctx, tx-2, ty-2, tw+4, th+4, 28);
+  // Background
   ctx.fillStyle = '#000';
-  ctx.fill();
+  ctx.fillRect(0,0,W,H);
+
+  // Draw Rear (Top 75% roughly)
+  const rearH = Math.round(H * 0.85);
+  drawCover(ctx, rearCanvasEl, 0, 0, W, rearH);
+
+  // Draw Front Window
+  const vp = document.getElementById('viewport');
+  const ratio = W / vp.clientWidth;
+  
+  const fw = frontBox.clientWidth * ratio;
+  const fh = frontBox.clientHeight * ratio;
+  const fx = (parseInt(frontBox.style.left) || 14) * ratio;
+  const fy = (parseInt(frontBox.style.top) || 14) * ratio;
+
+  ctx.save();
+  // Shadow
+  ctx.shadowColor = 'rgba(0,0,0,0.5)';
+  ctx.shadowBlur = 30;
+  // Rounded Rect Clip
+  roundedRect(ctx, fx, fy, fw, fh, 30);
   ctx.clip();
-  // draw front cover-fit into tx,ty,tw,th
-  await drawCoverCanvas(ctx, frontCanvasEl, tx, ty, tw, th);
+  drawCover(ctx, frontCanvasEl, fx, fy, fw, fh);
   ctx.restore();
 
-  // timestamp badge (left bottom)
-  const now = new Date();
-  const hh = String(now.getHours()).padStart(2,'0');
-  const mm = String(now.getMinutes()).padStart(2,'0');
-  const label = hh + ':' + mm;
-  ctx.fillStyle = 'rgba(0,0,0,0.5)';
-  ctx.fillRect(36, OUT_H - 120, 160, 56);
+  // Timestamp
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  roundedRect(ctx, 40, rearH - 100, 180, 60, 15);
+  ctx.fill();
   ctx.fillStyle = '#fff';
-  ctx.font = '34px system-ui, -apple-system';
-  ctx.fillText(label, 52, OUT_H - 82);
+  ctx.font = 'bold 36px sans-serif';
+  ctx.fillText(timeBadge.textContent, 65, rearH - 58);
 
-  // optional watermark small
-  ctx.fillStyle = 'rgba(255,255,255,0.06)';
-  ctx.font = '18px system-ui';
-  ctx.fillText('RealCam', OUT_W - 120, OUT_H - 40);
-
-  // finalize
-  composedDataUrl = out.toDataURL('image/jpeg', 0.92);
+  composedDataUrl = canvas.toDataURL('image/jpeg', 0.9);
   finalPreview.src = composedDataUrl;
 }
 
-/* draw cover-fit from source canvas to destination rect */
-async function drawCoverCanvas(dstCtx, srcCanvas, x, y, w, h){
-  // if srcCanvas sometimes not yet sized, we handle it
-  const sw = srcCanvas.width, sh = srcCanvas.height;
-  const sRatio = sw / sh;
-  const tRatio = w / h;
-  let sx, sy, swc, shc;
-  if(sRatio > tRatio){
-    shc = sh; swc = Math.round(shc * tRatio); sx = Math.round((sw - swc)/2); sy = 0;
-  } else {
-    swc = sw; shc = Math.round(swc / tRatio); sx = 0; sy = Math.round((sh - shc)/2);
-  }
-  dstCtx.drawImage(srcCanvas, sx, sy, swc, shc, x, y, w, h);
+function drawCover(ctx, img, x, y, w, h) {
+  const iw = img.width, ih = img.height;
+  const r = Math.min(iw / w, ih / h);
+  const nw = w * r, nh = h * r;
+  const cx = (iw - nw) / 2, cy = (ih - nh) / 2;
+  ctx.drawImage(img, cx, cy, nw, nh, x, y, w, h);
 }
 
-/* roundedRect helper */
-function roundedRect(ctx,x,y,w,h,r){
+function roundedRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
-  ctx.moveTo(x+r,y);
-  ctx.arcTo(x+w,y,x+w,y+h,r);
-  ctx.arcTo(x+w,y+h,x,y+h,r);
-  ctx.arcTo(x,y+h,x,y,r);
-  ctx.arcTo(x,y,x+w,y,r);
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h - r);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
   ctx.closePath();
 }
 
-/* --------------- UI events --------------- */
-captureBtn.addEventListener('click', ()=>{ captureSequence(); });
-saveBtn.addEventListener('click', ()=>{
-  if(!composedDataUrl){ showError('まだ合成画像がありません'); return; }
-  downloadDataUrl(composedDataUrl, `realcam_${Date.now()}.jpg`);
+captureBtn.addEventListener('click', captureSequence);
+openResultBtn.addEventListener('click', () => { resultModal.style.display = 'flex'; });
+retakeBtn.addEventListener('click', () => { resultModal.style.display = 'none'; });
+downloadBtn.addEventListener('click', () => {
+  const a = document.createElement('a');
+  a.href = composedDataUrl; a.download = `realcam_${Date.now()}.jpg`;
+  a.click();
 });
-openResultBtn.addEventListener('click', ()=>{
-  if(!composedDataUrl) return;
-  resultModal.style.display = 'flex';
-  resultModal.setAttribute('aria-hidden','false');
-});
-
-/* retake / download / send */
-retakeBtn.addEventListener('click', ()=>{
-  resultModal.style.display = 'none';
-  finalPreview.src = '';
-  composedDataUrl = null;
-  rearCanvasEl = frontCanvasEl = null;
-  saveBtn.disabled = true; openResultBtn.disabled = true;
-  statusEl.textContent = 'Tap to capture';
-});
-downloadBtn.addEventListener('click', ()=>{
-  if(!composedDataUrl) return;
-  downloadDataUrl(composedDataUrl, `realcam_${Date.now()}.jpg`);
-});
-sendBtn.addEventListener('click', ()=>{
-  // SENDアニメ（カード上にアニメ）
+sendBtn.addEventListener('click', () => {
   resultCard.classList.add('send-anim');
-  setTimeout(()=>{
+  setTimeout(() => {
     resultModal.style.display = 'none';
     resultCard.classList.remove('send-anim');
-    alert('送信したフリをしたよ〜（実際のシェアはローカル保存）💖');
-    retakeBtn.click();
-  },700);
+    alert('Sent!');
+  }, 600);
 });
-
-/* helper: force download */
-function downloadDataUrl(dataUrl, filename){
-  const a=document.createElement('a');
-  a.href=dataUrl; a.download=filename;
-  document.body.appendChild(a); a.click(); a.remove();
-}
-
-/* page load check: camera support */
-if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-  showError('このブラウザはカメラAPI非対応です。Safari最新版でhttps環境を使ってね。');
-} else {
-  statusEl.textContent = '準備OK — Captureを押してね✨';
-}
-
-/* 最後に、Safariでよくあるカメラ動かないケースの軽アドバイス */
-console.log('Tip: Safariでカメラ効かない場合は https / ローカルサーバー / 設定→Safari→カメラ を確認してね');
 </script>
 </body>
 </html>
