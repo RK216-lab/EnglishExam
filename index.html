@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-<title>RealCam — Optimized</title>
+<title>RealCam — Canvas合成 + アニメ</title>
 <style>
   :root{ --bg:#000; --muted:#999; --accent:#ff6b9f; }
   html,body{height:100%;margin:0;background:var(--bg);color:#fff;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;overflow:hidden;}
   .wrap{max-width:430px;margin:0 auto;padding:14px;display:flex;flex-direction:column;align-items:center;height:100dvh;}
-  .header{height:50px;width:100%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:22px;letter-spacing:1px}
+  .header{height:60px;width:100%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:22px}
   .viewport{
     width:100%;aspect-ratio:9/16;background:#111;border-radius:18px;overflow:hidden;position:relative;
     box-shadow:0 10px 30px rgba(0,0,0,0.6);touch-action:none;
@@ -16,58 +16,56 @@
   #rearVideo{width:100%;height:100%;object-fit:cover;display:block;background:#000}
   .front-box{
     position:absolute;left:14px;top:14px;width:110px;height:145px;
-    border-radius:12px;overflow:hidden;border:2px solid rgba(255,255,255,0.3);
+    border-radius:16px;overflow:hidden;border:3px solid rgba(0,0,0,0.5);
     background:#222;z-index:30;touch-action:none;
   }
   #frontVideo{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);}
-  .time-badge{position:absolute;left:16px;bottom:14px;background:rgba(0,0,0,0.5);padding:4px 10px;border-radius:8px;font-weight:700;z-index:40;font-size:14px}
+  .time-badge{position:absolute;left:16px;bottom:14px;background:rgba(0,0,0,0.55);padding:6px 10px;border-radius:10px;font-weight:700;z-index:40}
   .flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:80}
   .flash.anim{animation:flashAnim .4s ease-out}
   @keyframes flashAnim{0%{opacity:1}100%{opacity:0}}
-  .controls{margin-top:20px;display:flex;gap:20px;align-items:center}
-  .circle-btn{width:72px;height:72px;border-radius:50%;border:4px solid #fff;display:flex;align-items:center;justify-content:center;background:transparent;padding:4px}
-  .circle-inner{width:100%;height:100%;border-radius:50%;background:#fff;transition:transform 0.1s}
-  .circle-btn:active .circle-inner{transform:scale(0.9)}
-  .small{padding:10px 18px;border-radius:20px;background:#222;border:none;color:#fff;cursor:pointer;font-weight:700;font-size:14px}
-  .small:disabled{opacity:0.4;cursor:default}
-  .status{margin-top:12px;color:var(--muted);font-size:13px;height:1.2em}
-  #result{position:fixed;inset:0;background:rgba(0,0,0,0.98);display:none;align-items:center;justify-content:center;flex-direction:column;z-index:200;padding:20px}
-  .result-card{width:100%;max-width:380px;background:#000;border-radius:20px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,0.8)}
-  #finalPreview{width:100%;display:block;aspect-ratio:3/4;object-fit:contain;background:#000}
-  .result-footer{padding:16px;display:flex;gap:10px;align-items:center;justify-content:space-between}
-  .send-btn{background:transparent;border:none;color:#fff;font-weight:900;font-size:24px;cursor:pointer}
-  .retake{background:#333;padding:10px 16px;border-radius:12px;font-weight:700;cursor:pointer;color:#fff;border:none}
-  .download{background:var(--accent);padding:10px 16px;border-radius:12px;font-weight:700;cursor:pointer;color:#fff;border:none}
-  .send-anim{animation:sendUp .6s ease-in forwards}
-  @keyframes sendUp{0%{transform:translateY(0);opacity:1}100%{transform:translateY(-100px);opacity:0}}
+  .controls{margin-top:16px;display:flex;gap:12px;align-items:center}
+  .circle-btn{width:78px;height:78px;border-radius:50%;border:5px solid #fff;display:flex;align-items:center;justify-content:center;background:transparent;cursor:pointer}
+  .circle-inner{width:100%;height:100%;border-radius:50%;background:#fff}
+  .small{padding:10px 16px;border-radius:18px;background:#222;border:none;color:#fff;cursor:pointer;font-weight:700}
+  .small:disabled{opacity:0.3}
+  .status{margin-top:10px;color:var(--muted);font-size:14px;text-align:center}
+  #result{position:fixed;inset:0;background:rgba(0,0,0,0.95);display:none;align-items:center;justify-content:center;flex-direction:column;z-index:200}
+  .result-card{width:94%;max-width:420px;background:#000;border-radius:18px;overflow:hidden}
+  #finalPreview{width:100%;display:block;background:#111}
+  .result-footer{padding:14px;display:flex;gap:8px;align-items:center;justify-content:space-between}
+  .send-btn{background:transparent;border:none;color:#fff;font-weight:900;font-size:28px;cursor:pointer}
+  .retake,.download{padding:10px 14px;border-radius:14px;font-weight:700;cursor:pointer;color:#fff;border:none}
+  .retake{background:#222}
+  .download{background:var(--accent)}
+  .send-anim{animation:sendUp .7s ease forwards}
+  @keyframes sendUp{0%{transform:translateY(0);opacity:1}100%{transform:translateY(-20px);opacity:0}}
 </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="header">RealCam</div>
+    <div class="header">BeReal-ish</div>
     <div class="viewport" id="viewport">
       <div class="flash" id="flashLayer"></div>
       <video id="rearVideo" autoplay playsinline muted></video>
-      <div class="front-box" id="frontBox">
-        <video id="frontVideo" autoplay playsinline muted></video>
-      </div>
+      <div class="front-box" id="frontBox"><video id="frontVideo" autoplay playsinline muted></video></div>
       <div class="time-badge" id="timeBadge">--:--</div>
     </div>
     <div class="controls">
-      <button class="small" id="saveBtn" disabled>保存</button>
       <button class="circle-btn" id="captureBtn"><div class="circle-inner"></div></button>
-      <button class="small" id="openResultBtn" disabled>SEND</button>
+      <button class="small" id="saveBtn" disabled>保存</button>
+      <button class="small" id="openResultBtn" disabled>SEND画面</button>
     </div>
-    <div class="status" id="status">Ready</div>
+    <div class="status" id="status">Tap to capture ✨</div>
   </div>
 
-  <div id="result" role="dialog">
+  <div id="result">
     <div class="result-card" id="resultCard">
-      <img id="finalPreview" alt="preview"/>
+      <img id="finalPreview" alt="final"/>
       <div class="result-footer">
         <div style="display:flex;gap:8px">
-          <button class="retake" id="retakeBtn">戻る</button>
-          <button class="download" id="downloadBtn">保存</button>
+          <button class="retake" id="retakeBtn">撮り直し</button>
+          <button class="download" id="downloadBtn">保存する</button>
         </div>
         <button class="send-btn" id="sendBtn">SEND ▶</button>
       </div>
@@ -81,103 +79,89 @@ const frontBox = document.getElementById('frontBox');
 const captureBtn = document.getElementById('captureBtn');
 const flashLayer = document.getElementById('flashLayer');
 const statusEl = document.getElementById('status');
-const timeBadge = document.getElementById('timeBadge');
 const saveBtn = document.getElementById('saveBtn');
 const openResultBtn = document.getElementById('openResultBtn');
 const resultModal = document.getElementById('result');
 const finalPreview = document.getElementById('finalPreview');
-const retakeBtn = document.getElementById('retakeBtn');
-const downloadBtn = document.getElementById('downloadBtn');
-const sendBtn = document.getElementById('sendBtn');
-const resultCard = document.getElementById('resultCard');
 
-let rearCanvasEl, frontCanvasEl, composedDataUrl;
-let isCapturing = false;
+let rearCanvas, frontCanvas, composedBlob;
 
-// Time update
+// Time
 function updateTime(){
   const n = new Date();
-  timeBadge.textContent = String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
+  document.getElementById('timeBadge').textContent = String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
 }
 updateTime(); setInterval(updateTime, 10000);
 
-// Dragging
-let dragging = false, sX, sY, initX, initY;
+// Drag
+let dragging = false, sX, sY, iX, iY;
 frontBox.addEventListener('pointerdown', e => {
   dragging = true; sX = e.clientX; sY = e.clientY;
-  initX = frontBox.offsetLeft; initY = frontBox.offsetTop;
+  iX = frontBox.offsetLeft; iY = frontBox.offsetTop;
   frontBox.setPointerCapture(e.pointerId);
 });
 window.addEventListener('pointermove', e => {
-  if (!dragging) return;
+  if(!dragging) return;
   const vp = document.getElementById('viewport');
-  let nx = initX + (e.clientX - sX);
-  let ny = initY + (e.clientY - sY);
-  nx = Math.max(8, Math.min(vp.clientWidth - frontBox.clientWidth - 8, nx));
-  ny = Math.max(8, Math.min(vp.clientHeight - frontBox.clientHeight - 8, ny));
+  let nx = iX + (e.clientX - sX), ny = iY + (e.clientY - sY);
+  nx = Math.max(8, Math.min(vp.clientWidth - 118, nx));
+  ny = Math.max(8, Math.min(vp.clientHeight - 153, ny));
   frontBox.style.left = nx + 'px'; frontBox.style.top = ny + 'px';
 });
 window.addEventListener('pointerup', () => dragging = false);
 
-async function startStream(videoEl, mode) {
+// Camera Logic: 映像が本当に流れるまで待つ
+async function getActiveStream(videoEl, mode) {
   const stream = await navigator.mediaDevices.getUserMedia({
-    video: { facingMode: mode, width: { ideal: 1280 }, height: { ideal: 1280 } },
-    audio: false
+    video: { facingMode: mode, width: { ideal: 1280 }, height: { ideal: 1280 } }
   });
   videoEl.srcObject = stream;
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     videoEl.onloadedmetadata = () => {
       videoEl.play();
-      resolve(stream);
+      // 重要：readyStateが4（十分なデータあり）になるまで少し待つ
+      const check = setInterval(() => {
+        if (videoEl.readyState >= 3 && videoEl.videoWidth > 0) {
+          clearInterval(check);
+          resolve(stream);
+        }
+      }, 100);
     };
   });
 }
 
-function captureCanvas(videoEl) {
+function snap(videoEl) {
   const c = document.createElement('canvas');
   c.width = videoEl.videoWidth;
   c.height = videoEl.videoHeight;
   const ctx = c.getContext('2d');
-  if (videoEl === frontVideo) {
-    ctx.translate(c.width, 0); ctx.scale(-1, 1);
-  }
+  if(videoEl === frontVideo) { ctx.translate(c.width, 0); ctx.scale(-1, 1); }
   ctx.drawImage(videoEl, 0, 0);
   return c;
 }
 
-async function captureSequence() {
-  if (isCapturing) return;
-  isCapturing = true;
-  statusEl.textContent = 'Wait...';
-  
+async function startCapture() {
+  statusEl.textContent = 'Wait... (Rear Camera)';
   try {
-    // 1. Rear Capture
-    const rearStream = await startStream(rearVideo, 'environment');
-    await new Promise(r => setTimeout(r, 800)); // AF/AE stability
+    const s1 = await getActiveStream(rearVideo, 'environment');
+    await new Promise(r => setTimeout(r, 700)); // 露出調整待ち
     flashLayer.classList.add('anim');
+    rearCanvas = snap(rearVideo);
+    s1.getTracks().forEach(t => t.stop());
     setTimeout(() => flashLayer.classList.remove('anim'), 400);
-    rearCanvasEl = captureCanvas(rearVideo);
-    rearStream.getTracks().forEach(t => t.stop());
 
-    // 2. Front Capture
-    statusEl.textContent = 'Smile!';
-    const frontStream = await startStream(frontVideo, 'user');
-    await new Promise(r => setTimeout(r, 600));
-    frontCanvasEl = captureCanvas(frontVideo);
-    frontStream.getTracks().forEach(t => t.stop());
+    statusEl.textContent = 'Smile! (Front Camera)';
+    const s2 = await getActiveStream(frontVideo, 'user');
+    await new Promise(r => setTimeout(r, 700));
+    frontCanvas = snap(frontVideo);
+    s2.getTracks().forEach(t => t.stop());
 
-    // 3. Compose
-    statusEl.textContent = 'Processing...';
     await compose();
-    
-    saveBtn.disabled = false;
-    openResultBtn.disabled = false;
-    statusEl.textContent = 'Captured ✨';
-  } catch (err) {
-    console.error(err);
-    statusEl.textContent = 'Camera Error';
-  } finally {
-    isCapturing = false;
+    statusEl.textContent = 'Done! ✨';
+    saveBtn.disabled = openResultBtn.disabled = false;
+  } catch (e) {
+    statusEl.textContent = 'Error: Check Permissions';
+    console.error(e);
   }
 }
 
@@ -187,83 +171,59 @@ async function compose() {
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d');
 
-  // Background
-  ctx.fillStyle = '#000';
-  ctx.fillRect(0,0,W,H);
-
-  // Draw Rear (Top 75% roughly)
-  const rearH = Math.round(H * 0.85);
-  drawCover(ctx, rearCanvasEl, 0, 0, W, rearH);
-
-  // Draw Front Window
-  const vp = document.getElementById('viewport');
-  const ratio = W / vp.clientWidth;
+  ctx.fillStyle = '#050505'; ctx.fillRect(0,0,W,H);
   
-  const fw = frontBox.clientWidth * ratio;
-  const fh = frontBox.clientHeight * ratio;
+  // Rear Draw
+  const rRatio = Math.min(rearCanvas.width/W, rearCanvas.height/(H*0.8));
+  const rw = W * rRatio, rh = (H*0.8) * rRatio;
+  ctx.drawImage(rearCanvas, (rearCanvas.width-rw)/2, (rearCanvas.height-rh)/2, rw, rh, 0, 0, W, H*0.8);
+
+  // Front Draw (Position from UI)
+  const ratio = W / document.getElementById('viewport').clientWidth;
+  const fw = 110 * ratio, fh = 145 * ratio;
   const fx = (parseInt(frontBox.style.left) || 14) * ratio;
   const fy = (parseInt(frontBox.style.top) || 14) * ratio;
 
   ctx.save();
-  // Shadow
-  ctx.shadowColor = 'rgba(0,0,0,0.5)';
-  ctx.shadowBlur = 30;
+  ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 40;
   // Rounded Rect Clip
-  roundedRect(ctx, fx, fy, fw, fh, 30);
-  ctx.clip();
-  drawCover(ctx, frontCanvasEl, fx, fy, fw, fh);
+  ctx.beginPath();
+  ctx.roundRect ? ctx.roundRect(fx, fy, fw, fh, 25) : ctx.rect(fx, fy, fw, fh);
+  ctx.fill(); ctx.clip();
+  ctx.drawImage(frontCanvas, fx, fy, fw, fh);
   ctx.restore();
 
-  // Timestamp
-  ctx.fillStyle = 'rgba(0,0,0,0.4)';
-  roundedRect(ctx, 40, rearH - 100, 180, 60, 15);
-  ctx.fill();
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 36px sans-serif';
-  ctx.fillText(timeBadge.textContent, 65, rearH - 58);
+  // Time
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 40px sans-serif';
+  ctx.fillText(document.getElementById('timeBadge').textContent, 50, H * 0.75);
 
-  composedDataUrl = canvas.toDataURL('image/jpeg', 0.9);
-  finalPreview.src = composedDataUrl;
+  finalPreview.src = canvas.toDataURL('image/jpeg', 0.9);
+  canvas.toBlob(b => { composedBlob = b; }, 'image/jpeg', 0.9);
 }
 
-function drawCover(ctx, img, x, y, w, h) {
-  const iw = img.width, ih = img.height;
-  const r = Math.min(iw / w, ih / h);
-  const nw = w * r, nh = h * r;
-  const cx = (iw - nw) / 2, cy = (ih - nh) / 2;
-  ctx.drawImage(img, cx, cy, nw, nh, x, y, w, h);
-}
-
-function roundedRect(ctx, x, y, w, h, r) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h - r);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath();
-}
-
-captureBtn.addEventListener('click', captureSequence);
-openResultBtn.addEventListener('click', () => { resultModal.style.display = 'flex'; });
-retakeBtn.addEventListener('click', () => { resultModal.style.display = 'none'; });
-downloadBtn.addEventListener('click', () => {
+// Download Fix: Blobを使う
+function download() {
+  if(!composedBlob) return;
+  const url = URL.createObjectURL(composedBlob);
   const a = document.createElement('a');
-  a.href = composedDataUrl; a.download = `realcam_${Date.now()}.jpg`;
-  a.click();
-});
-sendBtn.addEventListener('click', () => {
-  resultCard.classList.add('send-anim');
+  a.href = url; a.download = `BeReal_${Date.now()}.jpg`;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+}
+
+captureBtn.onclick = startCapture;
+saveBtn.onclick = download;
+document.getElementById('downloadBtn').onclick = download;
+openResultBtn.onclick = () => resultModal.style.display = 'flex';
+document.getElementById('retakeBtn').onclick = () => { resultModal.style.display = 'none'; };
+document.getElementById('sendBtn').onclick = () => {
+  document.getElementById('resultCard').classList.add('send-anim');
   setTimeout(() => {
     resultModal.style.display = 'none';
-    resultCard.classList.remove('send-anim');
-    alert('Sent!');
-  }, 600);
-});
+    document.getElementById('resultCard').classList.remove('send-anim');
+    alert('送信完了（したフリ）！');
+  }, 700);
+};
 </script>
 </body>
 </html>
